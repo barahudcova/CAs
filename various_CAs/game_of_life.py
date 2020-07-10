@@ -3,6 +3,7 @@ import sys
 
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+from cellular_automaton.neighborhood import Neighborhood
 np.set_printoptions(threshold=sys.maxsize)
 
 
@@ -19,6 +20,7 @@ def moore(K, i, j):
                 K[i, (j-1)%m], K[i, j], K[i, (j+1)%m],
                 K[(i+1)%m, (j-1)%m], K[(i+1)%m, j], K[(i+1)%m, (j+1)%m]]))
 
+N = {"neumann": neumann, "moore": moore}
 
 
 #helper functions
@@ -32,27 +34,6 @@ def dec_to_bin(num, size):
     return tuple([int(x) for x in np.binary_repr(num, size)])
 
 
-
-
-# an automaton keeps track of the rule, initial condition and an actual state the automaton is in
-class Automaton():
-    def __init__(self, rule, init):
-        self.rule = rule
-        self.init = init
-        self.state = init  
-       
-        
-    def simulate(self, time):
-        l = len(self.state)
-        for t in range(time):
-            new_state = np.zeros((l,l), dtype=np.int)
-            for i in range(l):
-                for j in range(l):
-                    # znamena to, ze posledni pozice v listu rule odpovida stavu samych (tj. deviti) jednicek
-                    new_state[i][j] = self.rule[moore(self.state, i, j)]
-            self.state = new_state
-            
-            
             
 
 # game_of_life rule generation, stored in a list         
@@ -66,17 +47,17 @@ def game_of_life():
             game_of_life.append(1)
         else:
             game_of_life.append(0)
+    print(game_of_life)
+    print(len(game_of_life))
     return game_of_life
-
-
 
 
 # random rule generation, can choose between moore and neumann neighborhood
 def random_rule(neighborhood):
     if neighborhood == "moore":
-        rule = np.random.randint(2, size=2**(2**9))
+        rule = np.random.randint(2, size=2**9)
     elif neighborhood == "neumann":
-        rule = np.random.randint(2, size=2**(2**5))
+        rule = np.random.randint(2, size=2**5)
     return rule
 
 
@@ -99,25 +80,27 @@ def init():
     return state
             
 def animate(i):
-    global matrice, state, rule
+    global matrice, state, rule, NEIGHBORHOOD
+    n = N[NEIGHBORHOOD]
     l = state.shape[0]
     new_state = np.zeros((l,l), dtype=np.int)
     for i in range(l):
         for j in range(l):
             # last element in the rule table corresponds to the input of all ones
-            new_state[i][j] = rule[moore(state, i, j)]
+            new_state[i][j] = rule[n(state, i, j)]
     state = new_state
     
     #print(state)
     matrice.set_array(state)
     return state
 
-
+NEIGHBORHOOD = "moore"
 GRID_SIZE = 100
 PADDING = 10
 
 # set up rule and initial configuration
-rule = game_of_life()
+# rule = game_of_life()
+rule = random_rule(NEIGHBORHOOD)
 initial = generate_initial_configuration(GRID_SIZE, PADDING)
 
 # set up animation
